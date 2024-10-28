@@ -8,47 +8,51 @@
 #include <arpa/inet.h>
 #include <ctype.h>
 
-#define BUFFER 1014
+#define BUFFER 1024
 
 int main(int argc, char** argv) {
 
-    int puerto = 8080;
-    int servidor_fd, cliente_fd;
-    struct sockaddr_in servidor_addr, cliente_addr;
-    socklen_t cliente_len = sizeof(cliente_addr);
+    if (argc != 4) {
+        fprintf(stderr, "Uso: %s <puerto_local> <IP_servidor> <puerto_servidor>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    int puerto_cliente = atoi(argv[1]);
+    char *ip = argv[2];
+    int puerto = atoi(argv[3]);
+    
+    int cliente_fd;
+    struct sockaddr_in servidor_addr, local_addr;
     char buffer[BUFFER];
     
-    if((servidor_fd = socket(AF_INET, SOCK_STREAM, 0))<0){
-        printf("Error socket");
+    if((cliente_fd = socket(AF_INET, SOCK_DGRAM, 0))<0){
+        perror("Error socket");
+        exit(1);
     }
     servidor_addr.sin_family = AF_INET;
-    servidor_addr.sin_addr.s_addr = htons(INADDR_ANY); // Aceptar conexiones de cualquier IP
+    servidor_addr.sin_addr.s_addr = inet_addr(ip);
     servidor_addr.sin_port = htons(puerto);
 
-    if(bind(servidor_fd, (struct sockaddr *)&servidor_addr, sizeof(servidor_addr))<0){
-        printf("Error bind\n");
-        close(servidor_fd);
-        exit(1);
-    }
-    if(listen(servidor_fd,1)<0){
-        printf("Error listen\n");
-        close(servidor_fd);
-        exit(1);
+    local_addr.sin_family = AF_INET;
+    local_addr.sin_port = htons(puerto_cliente); // Puerto de envío
+    local_addr.sin_addr.s_addr = INADDR_ANY; // Dirección IP del cliente
+
+    if (bind(cliente_fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
+        perror("Error en bind del cliente");
+        close(cliente_fd);
+        exit(EXIT_FAILURE);
     }
     
     while(1){
-        if((cliente_fd = accept(servidor_fd, (struct sockaddr *)&cliente_addr, &cliente_len))<0){
-            printf("Error accept\n");
-        }
-        printf("Conexión aceptada de %s:%d\n", inet_ntoa(cliente_addr.sin_addr), ntohs(cliente_addr.sin_port));
         char *mensaje = "Primer mensaje\n";
-
-        // parte c
-        send(cliente_fd,mensaje, strlen(mensaje),0);
+        sendto(cliente_fd, mensaje, strlen(mensaje), 0, (struct sockaddr *)&servidor_addr, sizeof(servidor_addr));
+        
         mensaje = "Segundo mensaje.\n";
-        send(cliente_fd, mensaje, strlen(mensaje),0);
+        sendto(cliente_fd, mensaje, strlen(mensaje), 0, (struct sockaddr *)&servidor_addr, sizeof(servidor_addr));
+        sleep(2);
     }
-    close(servidor_fd);
+
+    close(cliente_fd);
 
     return 0;
 }

@@ -7,20 +7,18 @@
 #define BUFFER_SIZE 1024
 
 int main(int argc, char *argv[]) {
-    if (argc != 3) {
-        fprintf(stderr, "Uso: %s <IP> <puerto>\n", argv[0]);
+    if (argc != 2) {
+        fprintf(stderr, "Uso: %s <puerto>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
-
-    char *ip = argv[1];
-    int puerto = atoi(argv[2]);
+    int puerto = atoi(argv[1]);
     int socket_fd;
-    struct sockaddr_in servidor_addr;
+    struct sockaddr_in servidor_addr, cliente_addr;
     char buffer[BUFFER_SIZE];
     int n;
 
     // Crear el socket
-    if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+    if ((socket_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("Error al crear el socket");
         exit(EXIT_FAILURE);
     }
@@ -28,25 +26,34 @@ int main(int argc, char *argv[]) {
     // Configurar la dirección del servidor
     servidor_addr.sin_family = AF_INET;
     servidor_addr.sin_port = htons(puerto);
-    inet_pton(AF_INET, ip, &servidor_addr.sin_addr);
+    servidor_addr.sin_addr.s_addr = INADDR_ANY;
 
-    // Conectar al servidor
-    if (connect(socket_fd, (struct sockaddr *)&servidor_addr, sizeof(servidor_addr)) < 0) {
-        perror("Error al conectar");
+
+
+    if(bind(socket_fd, (struct sockaddr *)&servidor_addr, sizeof(servidor_addr))<0){
+        perror("Error bind\n");
         close(socket_fd);
-        exit(EXIT_FAILURE);
+        exit(1);
     }
 
+    socklen_t cliente_len = sizeof(cliente_addr);
 
     // Recibir el mensaje del servidor
-    while((n = recv(socket_fd, buffer, BUFFER_SIZE,0))>0){
-        //n = recv(socket_fd, buffer, BUFFER_SIZE - 1, 0);
+    printf("Entramos en el bucle\n\n");
+    while(1){
+        n = recvfrom(socket_fd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&cliente_addr, &cliente_len);
+        if (n < 0) {
+            perror("Error al recibir");
+            break;
+        }
+        
         if (n < 0) {
             perror("Error al recibir");
         } else {
             buffer[n] = '\0'; // Asegurar que el buffer sea una cadena
             printf("Mensaje recibido: %s", buffer);
             printf("Número de bytes recibidos: %d\n", n);
+            printf("Recibido de %s:%d\n", inet_ntoa(cliente_addr.sin_addr), ntohs(cliente_addr.sin_port));
         }
     }
 

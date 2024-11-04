@@ -20,6 +20,7 @@ int main(int argc, char** argv) {
     int puerto_cliente = atoi(argv[1]);
     char *ip = argv[2];
     int puerto = atoi(argv[3]);
+    int bytes_enviados = -1;
     
     int cliente_fd;
     struct sockaddr_in servidor_addr, local_addr;
@@ -45,10 +46,19 @@ int main(int argc, char** argv) {
     
     while(1){
         char *mensaje = "Primer mensaje\n";
-        sendto(cliente_fd, mensaje, strlen(mensaje), 0, (struct sockaddr *)&servidor_addr, sizeof(servidor_addr));
-        
+        if((bytes_enviados = sendto(cliente_fd, mensaje, strlen(mensaje), 0, (struct sockaddr *)&servidor_addr, sizeof(servidor_addr))) < 0){
+            perror("Error al enviar primer mensaje\n");
+            exit(1);
+        }
+        printf("Bytes enviados: %d\n",bytes_enviados);
+
+
         mensaje = "Segundo mensaje.\n";
-        sendto(cliente_fd, mensaje, strlen(mensaje), 0, (struct sockaddr *)&servidor_addr, sizeof(servidor_addr));
+        if((bytes_enviados = sendto(cliente_fd, mensaje, strlen(mensaje), 0, (struct sockaddr *)&servidor_addr, sizeof(servidor_addr))) < 0){
+            perror("Error al enviar segundo mensaje\n");
+            exit(2);
+        }
+        printf("Bytes enviados: %d\n",bytes_enviados);
         sleep(2);
     }
 

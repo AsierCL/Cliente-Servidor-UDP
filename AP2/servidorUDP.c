@@ -8,7 +8,7 @@
 #include <arpa/inet.h>
 #include <ctype.h>
 
-#define BUFFER 1014
+#define BUFFER_SIZE 1024
 
 int main(int argc, char** argv) {
 
@@ -21,17 +21,17 @@ int main(int argc, char** argv) {
     int servidor_fd, cliente_fd, n;
     struct sockaddr_in servidor_addr, cliente_addr;
     socklen_t cliente_len = sizeof(cliente_addr);
-    char buffer[BUFFER];
+    char buffer[BUFFER_SIZE];
 
     // Crear el socket
-    if((servidor_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+    if((servidor_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0){
         perror("Error al crear el socket");
         exit(1);
     }
 
     servidor_addr.sin_family = AF_INET;
-    servidor_addr.sin_addr.s_addr = htons(INADDR_ANY); // Aceptar conexiones de cualquier IP
     servidor_addr.sin_port = htons(puerto);
+    servidor_addr.sin_addr.s_addr = htons(INADDR_ANY); // Aceptar conexiones de cualquier IP
 
     // Enlazar el socket al puerto
     if(bind(servidor_fd, (struct sockaddr *)&servidor_addr, sizeof(servidor_addr)) < 0){
@@ -40,12 +40,7 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    // Escuchar conexiones entrantes
-    if(listen(servidor_fd, 1) < 0){
-        perror("Error en el listen");
-        close(servidor_fd);
-        exit(1);
-    }
+    socklen_t cliente_len = sizeof(cliente_addr);
 
     printf("Servidor escuchando en el puerto %d\n", puerto);
 
@@ -60,7 +55,7 @@ int main(int argc, char** argv) {
         printf("Conexión aceptada de %s:%d\n", inet_ntoa(cliente_addr.sin_addr), ntohs(cliente_addr.sin_port));
 
         // Recibir datos del cliente
-        while((n = recv(cliente_fd, buffer, BUFFER, 0)) > 0) {
+        while((n = recvfrom(servidor_fd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&cliente_addr, &cliente_len)) > 0) {
             buffer[n] = '\0';  // Asegurar el final del string
             printf("Mensaje recibido: %s", buffer);
             sleep(1);
@@ -70,13 +65,12 @@ int main(int argc, char** argv) {
             }
 
             // Enviar el mensaje de vuelta al cliente
-            send(cliente_fd, buffer, strlen(buffer), 0);
+            sendto(cliente_fd, buffer, strlen(buffer), 0, (struct sockaddr *)&cliente_addr, &cliente_len);
         }
 
         if(n < 0) {
             perror("Error al recibir datos");
         }
-
     }
 
     close(servidor_fd);

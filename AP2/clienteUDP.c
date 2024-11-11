@@ -8,15 +8,16 @@
 #define BUFFER_SIZE 1024
 
 int main(int argc, char *argv[]) {
-    if (argc != 4) {
-        fprintf(stderr, "Uso: %s <archivo> <IP> <puerto>\n", argv[0]);
+    if (argc != 5) {
+        fprintf(stderr, "Uso: %s <archivo> <IP> <puerto> <puerto cliente>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
     char *ip = argv[2];
     int puerto = atoi(argv[3]);
-    int socket_fd;
-    struct sockaddr_in servidor_addr;
+    int puerto_cliente = atoi(argv[4]);
+    int cliente_fd;
+    struct sockaddr_in servidor_addr, local_addr;
     char buffer[BUFFER_SIZE];
     int n;
     FILE *inputFile, *outputFile;
@@ -41,7 +42,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Crear el socket
-    if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+    if ((cliente_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("Error al crear el socket");
         exit(EXIT_FAILURE);
     }
@@ -49,30 +50,35 @@ int main(int argc, char *argv[]) {
     // Configurar la dirección del servidor
     servidor_addr.sin_family = AF_INET;
     servidor_addr.sin_port = htons(puerto);
-    inet_pton(AF_INET, ip, &servidor_addr.sin_addr);
+    servidor_addr.sin_addr.s_addr = inet_addr(ip);
 
-    // Conectar al servidor
-    if (connect(socket_fd, (struct sockaddr *)&servidor_addr, sizeof(servidor_addr)) < 0) {
-        perror("Error al conectar");
-        close(socket_fd);
+    local_addr.sin_family = AF_INET;
+    local_addr.sin_port = htons(puerto_cliente); // Puerto de envío
+    local_addr.sin_addr.s_addr = INADDR_ANY; // Dirección IP del cliente
+
+    if (bind(cliente_fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
+        perror("Error en bind del cliente");
+        close(cliente_fd);
         exit(EXIT_FAILURE);
     }
+
+    socklen_t servidor_len = sizeof(servidor_addr);
 
     // Leer el archivo original línea por línea, convertir a mayúsculas y escribir en el nuevo archivo
     while (fgets(line, sizeof(line), inputFile)) {
         // Escribir la línea convertida en el archivo de salida
-        send(socket_fd,line, strlen(line),0);
-        n = recv(socket_fd, buffer, BUFFER_SIZE,0);
+        sendto(cliente_fd, line, strlen(line), 0, (struct sockaddr *)&servidor_addr, sizeof(servidor_addr));
+        n = recvfrom(cliente_fd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&servidor_addr, &servidor_len);
             if (n < 0) {
                 perror("Error al recibir");
             } else {
                 buffer[n] = '\0'; // Asegurar que el buffer sea una cadena
                 printf("Mensaje recibido: %s", buffer);
                 printf("Número de bytes recibidos: %d\n", n);
-                fputs(line, outputFile);
+                fputs(buffer, outputFile);
             }
         }
 
-    close(socket_fd); // Cerrar el socket del cliente
+    close(cliente_fd); // Cerrar el socket del cliente
     return 0;
 }

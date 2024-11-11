@@ -40,32 +40,21 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    socklen_t cliente_len = sizeof(cliente_addr);
-
     printf("Servidor escuchando en el puerto %d\n", puerto);
 
     while(1) {
-        // Aceptar una conexión
-        if((cliente_fd = accept(servidor_fd, (struct sockaddr *)&cliente_addr, &cliente_len)) < 0){
-            perror("Error al aceptar la conexión");
-            close(servidor_fd);
-            exit(1);
-        }
-
-        printf("Conexión aceptada de %s:%d\n", inet_ntoa(cliente_addr.sin_addr), ntohs(cliente_addr.sin_port));
-
         // Recibir datos del cliente
         while((n = recvfrom(servidor_fd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&cliente_addr, &cliente_len)) > 0) {
             buffer[n] = '\0';  // Asegurar el final del string
             printf("Mensaje recibido: %s", buffer);
-            sleep(1);
+            usleep(50000);
             // Convertir el mensaje a mayúsculas
             for(int i = 0; buffer[i] != '\0'; i++) {
                 buffer[i] = toupper(buffer[i]);
             }
 
             // Enviar el mensaje de vuelta al cliente
-            sendto(cliente_fd, buffer, strlen(buffer), 0, (struct sockaddr *)&cliente_addr, &cliente_len);
+            sendto(servidor_fd, buffer, strlen(buffer), 0, (struct sockaddr *)&cliente_addr, cliente_len);
         }
 
         if(n < 0) {

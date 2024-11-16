@@ -9,13 +9,13 @@
 
 int main(int argc, char *argv[]) {
     if (argc != 5) {
-        fprintf(stderr, "Uso: %s <archivo> <IP> <puerto> <puerto cliente>\n", argv[0]);
+        fprintf(stderr, "Uso: %s <archivo> <puerto propio> <IP servidor> <puerto servidor>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
-    char *ip = argv[2];
-    int puerto = atoi(argv[3]);
-    int puerto_cliente = atoi(argv[4]);
+    int puerto_cliente = atoi(argv[2]);
+    char *ip = argv[3];
+    int puerto_servidor = atoi(argv[4]);
     int cliente_fd;
     struct sockaddr_in servidor_addr, local_addr;
     char buffer[BUFFER_SIZE];
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
 
     // Configurar la dirección del servidor
     servidor_addr.sin_family = AF_INET;
-    servidor_addr.sin_port = htons(puerto);
+    servidor_addr.sin_port = htons(puerto_servidor);
     servidor_addr.sin_addr.s_addr = inet_addr(ip);
 
     local_addr.sin_family = AF_INET;

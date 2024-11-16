@@ -46,15 +46,10 @@ int main(int argc, char *argv[]) {
             perror("Error al recibir");
             break;
         }
-        
-        if (n < 0) {
-            perror("Error al recibir");
-        } else {
-            buffer[n] = '\0'; // Asegurar que el buffer sea una cadena
-            printf("Mensaje recibido: %s", buffer);
-            printf("Número de bytes recibidos: %d\n", n);
-            printf("Recibido de %s:%d\n", inet_ntoa(cliente_addr.sin_addr), ntohs(cliente_addr.sin_port));
-        }
+        buffer[n] = '\0'; // Asegurar que el buffer sea una cadena
+        printf("Mensaje recibido: %s", buffer);
+        printf("Número de bytes recibidos: %d\n", n);
+        printf("Recibido de %s:%d\n", inet_ntoa(cliente_addr.sin_addr), ntohs(cliente_addr.sin_port));
     }
 
     close(socket_fd); // Cerrar el socket del cliente

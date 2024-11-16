@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
     }
 
     int puerto = atoi(argv[1]);  // Tomar el puerto desde los argumentos
-    int servidor_fd, cliente_fd, n;
+    int servidor_fd, n;
     struct sockaddr_in servidor_addr, cliente_addr;
     socklen_t cliente_len = sizeof(cliente_addr);
     char buffer[BUFFER_SIZE];

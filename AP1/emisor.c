@@ -24,7 +24,6 @@ int main(int argc, char** argv) {
     
     int cliente_fd;
     struct sockaddr_in servidor_addr, local_addr;
-    char buffer[BUFFER];
     
     if((cliente_fd = socket(AF_INET, SOCK_DGRAM, 0))<0){
         perror("Error socket");
